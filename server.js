@@ -1,83 +1,44 @@
-// Using the tools and techniques you learned so far,
-// you will scrape a website of your choice, then place the data
-// in a MongoDB database. Be sure to make the database and collection
-// before running this exercise.
-
-// Consult the assignment files from earlier in class
-// if you need a refresher on Cheerio.
-
-// Dependencies
 var express = require("express");
-var mongojs = require("mongojs");
-// Require axios and cheerio. This makes the scraping possible
+var logger = require("morgan");
+var mongoose = require("mongoose");
+
+// Our scraping tools
+// Axios is a promised-based http library, similar to jQuery's Ajax method
+// It works on the client and on the server
 var axios = require("axios");
 var cheerio = require("cheerio");
+
+// Require all models
+var db = require("./models");
+
+var PORT = 3000;
 
 // Initialize Express
 var app = express();
 
-// Database configuration
-var databaseUrl = "scraper";
-var collections = ["scrapedData"];
+// Configure middleware
 
-// Hook mongojs configuration to the db variable
-var db = mongojs(databaseUrl, collections);
-db.on("error", function (error) {
-  console.log("Database Error:", error);
-});
+// Use morgan logger for logging requests
+app.use(logger("dev"));
+// Parse request body as JSON
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+// Make public a static folder
+app.use(express.static("public"));
 
-// Main route (simple Hello World Message)
+// Connect to the Mongo DB
+mongoose.connect("mongodb://localhost/scraper", { useNewUrlParser: true });
+
+
 app.get("/", function (req, res) {
   res.send("Hello world");
 });
 
 
 // TODO: make two more routes
-
-
-// Route 1
-// =======
-app.get("/scrape", function (req, res) {
-  axios.get("https://www.npr.org/sections/news/").then(function (response) {
-
-    // Load the HTML into cheerio and save it to a variable
-    // '$' becomes a shorthand for cheerio's selector commands, much like jQuery's '$'
-    var $ = cheerio.load(response.data);
-
-    // An empty array to save the data that we'll scrape
-    var results = [];
-
-    // With cheerio, find each p-tag with the "title" class
-    // (i: iterator. element: the current element)
-    $(".item-info").each(function (i, element) {
-
-      // Save the text of the element in a "title" variable
-      var title = $(element).children().text().trim();
-
-      // In the currently selected element, look at its child elements (i.e., its a-tags),
-      // then save the values for any "href" attributes that the child elements may have
-      var link = $(element).children().children("a").attr("href");
-      var summary = $(element).children().children("a").text().trim();
-
-      // Save these results in an object that we'll push into the results array we defined earlier
-      if (title && link && summary) {
-        results.push({
-          title: title,
-          link:   link,
-          summary: summary
-        });
-      }
-    });
-
-    // Log the results once you've looped through each of the elements found with cheerio
-    console.log(results);
-    res.send("Scrape Complete!");
-  });
-})
-
-app.get("/all", function(req, res) {
+app.get("/articles", function(req, res) {
     // Find all results from the scrapedData collection in the db
-    db.scrapedData.find({}, function(error, found) {
+    db.Article.find({}, function(error, found ) {
       // Throw any errors to the console
       if (error) {
         console.log(error);
@@ -85,13 +46,93 @@ app.get("/all", function(req, res) {
       // If there are no errors, send the data to the browser as json
       else {
         res.json(found);
+        console.log(found);
       }
+    });
+  });
+  //Scrape from www.org for title, link, and summary of article
+app.get("/scrape", function(req, res) {
+    // First, we grab the body of the html with axios
+    axios.get("https://www.npr.org/sections/news/").then(function(response) {
+      // Then, we load that into cheerio and save it to $ for a shorthand selector
+      var $ = cheerio.load(response.data);
+  
+      // Now, we grab every h2 within an article tag, and do the following:
+      $(".item-info").each(function(i, element) {
+        // Save an empty result object
+        var result = {};
+  
+        // Add the text and href of every link, and save them as properties of the result object
+        result.title = $(this)
+        .children()
+        .text()
+        .trim();
+        result.link = $(this)
+        .children()
+        .children("a")
+        .attr("href");
+        result.summary = $(this)
+        .children()
+        .children("a")
+        .text()
+        .trim();
+
+  
+        // Create a new Article using the `result` object built from scraping
+        db.Article.create(result)
+          .then(function(dbArticle) {
+            // View the added result in the console
+            console.log(dbArticle);
+          })
+          .catch(function(err) {
+            // If an error occurred, log it
+            console.log(err);
+          });
+      });
+  
+      // Send a message to the client
+      res.send("Scrape Complete");
     });
   });
 
 
+  app.get("/articles/:id", function(req, res) {
+    // Using the id passed in the id parameter, prepare a query that finds the matching one in our db...
+    db.Article.findOne({ _id: req.params.id })
+      // ..and populate all of the notes associated with it
+      .populate("note")
+      .then(function(dbArticle) {
+        // If we were able to successfully find an Article with the given id, send it back to the client
+        res.json(dbArticle);
+      })
+      .catch(function(err) {
+        // If an error occurred, send it to the client
+        res.json(err);
+      });
+  });
+  
+  // Route for saving/updating an Article's associated Note
+  app.post("/articles/:id", function(req, res) {
+    // Create a new note and pass the req.body to the entry
+    db.Note.create(req.body)
+      .then(function(dbNote) {
+        // If a Note was created successfully, find one Article with an `_id` equal to `req.params.id`. Update the Article to be associated with the new Note
+        // { new: true } tells the query that we want it to return the updated User -- it returns the original by default
+        // Since our mongoose query returns a promise, we can chain another `.then` which receives the result of the query
+        return db.Article.findOneAndUpdate({ _id: req.params.id }, { note: dbNote._id }, { new: true });
+      })
+      .then(function(dbArticle) {
+        // If we were able to successfully update an Article, send it back to the client
+        res.json(dbArticle);
+      })
+      .catch(function(err) {
+        // If an error occurred, send it to the client
+        res.json(err);
+      });
+  });
 
 // Listen on port 3000
 app.listen(3000, function () {
   console.log("App running on port 3000!");
 });
+
