@@ -1,0 +1,127 @@
+
+
+#pull-right {
+  position: absolute;
+  right: 10%;
+}
+
+.navbar-brand,
+.nav-item,
+#scrape-btn,
+#clear-btn {
+  margin-left: 10px;
+}
+
+#jumbotron {
+  position: fixed;
+  width: 100%;
+  height: auto;
+  border-bottom: 5px solid rgb(0,107,58);
+  margin-top: 20px;
+  background-color: #fff;
+  background-image: url("/assets/images/the-onion.svg");
+  background-size: 40%;
+  background-repeat: no-repeat;
+  background-position: 20% 85%;
+  z-index: 10;
+}
+
+.container {
+  background-color: rgb(0,107,58);
+}
+
+.clearfix {
+  overflow: auto;
+}
+
+.pagetitle {
+  position: absolute;
+  top: 60%;
+  left: 60%;
+}
+
+.row {
+  position: relative;
+  top: 175px;
+  margin-bottom: 175px;
+}
+
+#modal-message {
+  text-align: center;
+  font-size: 2rem;
+}
+
+.modal-header,
+.modal-footer {
+  background-color: rgb(0,107,58);
+  color: #fff;
+}
+
+.warning {
+  color: rgb(238, 12, 12);
+  font-weight: bolder;
+}
+
+#destroy-btn {
+  position: absolute;
+  left: 20px;
+}
+
+.panel-heading {
+  background-color: rgb(52,58,64);
+  border: 1px solid #fff;
+  border-radius: 5px;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.panel-title,
+.card-header {
+  color: #fff;
+  font-weight: bold;
+}
+
+.header-right {
+  float: right;
+}
+
+.body-left {
+  display: inline;
+  margin-right: 10px;
+  width: 30%;
+}
+
+.article-img {
+  width: inherit;
+  height: inherit;
+  border-radius: 5px;
+}
+
+.body-right {
+  display: inline;
+  float: right;
+  width: 67%;
+}
+
+#save-btn,
+#return-btn,
+#notes-btn,
+#view-btn {
+  border: 2px solid #fff;
+  display: block;
+  margin: 5px;
+}
+
+#notecard {
+  padding: 0px;
+}
+
+.notecardTitle {
+  width: 70%;
+  display: inline-block;
+}
+
+.deleteNote {
+  width: 30%;
+  display: inline-block;
+}
