@@ -41,37 +41,39 @@ router.get("/scrape", function (req, res) {
 
             // Create a new Article using the `result` object built from scraping
             db.Article.create(result)
-                .then(function (dbArticle) {
-                    // View the added result in the console
-                    console.log(dbArticle);
-                })
-                .catch(function (err) {
-                    // If an error occurred, log it
-                    console.log(err);
-                });
+            .then(function(dbArticle) {
+                // View the added result in the console:
+                // console.log(dbArticle);
+            })
+            .catch(function(error) {
+                // Send the error, if it exists.
+                return res.json(error);
+            });
         });
 
-        // Send a message to the client
-        res.send("Scrape Complete");
+        // Alert the client if the scrape was completed:
+        res.send("Scrape was successful!");
     });
 });
 
-router.get("/", function (req, res) {
+// Route to get all Articles from the db.
+router.get("/", function(req, res) {
     // Limit set to only show first 20 articles.
     db.Article.find({}).limit(20)
-        .then(function (scrapedData) {
-            // Save all scraped data into a handlebars object.
-            var hbsObject = { articles: scrapedData };
-            console.log(hbsObject);
-            // Send all found articles as an object to be used in the handlebars receieving section of the index.
-            res.render("index", hbsObject);
-        })
-        .catch(function (error) {
-            // If an error occurs, send the error to the client.
-            res.json(error);
-        });
+    .then(function(scrapedData) {
+        // Save all scraped data into a handlebars object.
+        var hbsObject = {articles:scrapedData};
+        console.log(hbsObject);
+        // Send all found articles as an object to be used in the handlebars receieving section of the index.
+        res.render("index", hbsObject);
+    })
+    .catch(function(error) {
+        // If an error occurs, send the error to the client.
+        res.json(error);
+    });
 });
 
+// Route to save an Article.
 router.put("/saved/:id", function(req, res) {
     // Update the article's boolean "saved" status to 'true.'
     db.Article.update(
@@ -86,7 +88,6 @@ router.put("/saved/:id", function(req, res) {
         res.json(error);
     });
 });
-
 
 // Route to drop the Articles collection.
 router.delete("/drop-articles", function(req, res, next) {
